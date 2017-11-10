@@ -28,6 +28,7 @@ class ViewController: UIViewController {
         button.widthAnchor.constraint(equalToConstant: 150).isActive = true
         button.heightAnchor.constraint(equalToConstant: 40).isActive = true
         
+        button.dropView.dropDownOptions = ["Blue", "Green", "Yellow", "Red", "Orange", "Purple"]
     }
 
     override func didReceiveMemoryWarning() {
@@ -36,7 +37,16 @@ class ViewController: UIViewController {
     }
 }
 
-class dropDownBtn: UIButton {
+protocol dropDownProtocol {
+    func dropDownPressed(string : String)
+}
+
+class dropDownBtn: UIButton, dropDownProtocol {
+    
+    func dropDownPressed(string: String) {
+        self.setTitle(string, for: .normal)
+        dismissDropDown()
+    }
     
     var dropView = dropDownView()
     var height = NSLayoutConstraint()
@@ -47,6 +57,7 @@ class dropDownBtn: UIButton {
         self.backgroundColor = UIColor.darkGray
         
         dropView = dropDownView.init(frame: CGRect.init(x: 0, y: 0, width: 0, height: 0))
+        dropView.delegate = self
         dropView.translatesAutoresizingMaskIntoConstraints = false
         
         self.superview?.addSubview(dropView)
@@ -68,7 +79,12 @@ class dropDownBtn: UIButton {
             isOpen = true
             
             NSLayoutConstraint.deactivate([self.height])
-            self.height.constant = 150
+            
+            if self.dropView.tableView.contentSize.height > 150 {
+                self.height.constant = 150
+            } else {
+                self.height.constant = self.dropView.tableView.contentSize.height
+            }
             NSLayoutConstraint.activate([self.height])
             
             UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 0.5, initialSpringVelocity: 0.5, options: .curveEaseInOut, animations: {
@@ -89,6 +105,19 @@ class dropDownBtn: UIButton {
         }
     }
     
+    func dismissDropDown() {
+        isOpen = false
+        
+        NSLayoutConstraint.deactivate([self.height])
+        self.height.constant = 0
+        NSLayoutConstraint.activate([self.height])
+        
+        UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 0.5, initialSpringVelocity: 0.5, options: .curveEaseInOut, animations: {
+            self.dropView.center.y -= self.dropView.frame.height / 2
+            self.dropView.layoutIfNeeded()
+        }, completion: nil)
+    }
+    
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented.")
     }
@@ -98,6 +127,7 @@ class dropDownView: UIView, UITableViewDelegate, UITableViewDataSource {
     
     var dropDownOptions = [String]()
     var tableView = UITableView()
+    var delegate : dropDownProtocol!
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -140,7 +170,8 @@ class dropDownView: UIView, UITableViewDelegate, UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        print(dropDownOptions[indexPath.row])
+        self.delegate.dropDownPressed(string: dropDownOptions[indexPath.row])
+        self.tableView.deselectRow(at: indexPath, animated: true)
     }
 }
 
